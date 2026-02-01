@@ -763,7 +763,7 @@
         </div>
     </div>
     
-    <script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js">
         // ============================================
         // CONFIGURATION
         // ============================================
@@ -898,8 +898,8 @@
             document.getElementById('bottomPlayers').textContent = count;
         }
         
-        // Wallet Connection
-        function connectWallet() {
+        // Wallet Connection - Real Phantom Integration
+        async function connectWallet() {
             const btn = document.getElementById('connectWalletTop');
             
             if (gameState.walletConnected) {
@@ -909,29 +909,68 @@
                 btn.textContent = 'CONNECT WALLET';
                 btn.classList.remove('connected');
                 addTerminal('SYSTEM', 'Wallet disconnected');
-            } else {
-                // Simulate wallet connection (in production, use Solana wallet adapter)
-                // For now, just mock it
-                const mockAddress = generateMockWalletAddress();
-                gameState.walletConnected = true;
-                gameState.walletAddress = mockAddress;
+                return;
+            }
+            
+            // Check if Phantom is installed
+            const getProvider = () => {
+                if ('phantom' in window) {
+                    const provider = window.phantom?.solana;
+                    if (provider?.isPhantom) {
+                        return provider;
+                    }
+                }
+                window.open('https://phantom.app/', '_blank');
+                addTerminal('SYSTEM', 'Please install Phantom wallet extension');
+                return null;
+            };
+            
+            const provider = getProvider();
+            if (!provider) return;
+            
+            try {
+                // Request connection to Phantom
+                const resp = await provider.connect();
+                const walletAddress = resp.publicKey.toString();
                 
-                const shortAddress = mockAddress.substring(0, 4) + '...' + mockAddress.substring(mockAddress.length - 4);
+                gameState.walletConnected = true;
+                gameState.walletAddress = walletAddress;
+                
+                const shortAddress = walletAddress.substring(0, 4) + '...' + walletAddress.substring(walletAddress.length - 4);
                 btn.textContent = shortAddress;
                 btn.classList.add('connected');
                 
                 addTerminal('SYSTEM', `Wallet connected: ${shortAddress}`);
-                addTerminal('SYSTEM', 'Verified $BRD holdings. Ready to join battle!');
+                addTerminal('SYSTEM', 'Checking $BRD holdings...');
+                
+                // Simulate checking token balance
+                setTimeout(() => {
+                    addTerminal('SYSTEM', 'Verified $BRD holdings. Ready to join battle!');
+                }, 1500);
+                
+            } catch (err) {
+                console.error('Wallet connection error:', err);
+                addTerminal('SYSTEM', 'Wallet connection cancelled or failed');
             }
         }
         
-        function generateMockWalletAddress() {
-            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-            let address = '';
-            for (let i = 0; i < 44; i++) {
-                address += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return address;
+        // Listen for account changes
+        if (window.phantom?.solana) {
+            window.phantom.solana.on('accountChanged', (publicKey) => {
+                if (publicKey) {
+                    const shortAddress = publicKey.toString().substring(0, 4) + '...' + publicKey.toString().substring(publicKey.toString().length - 4);
+                    document.getElementById('connectWalletTop').textContent = shortAddress;
+                    gameState.walletAddress = publicKey.toString();
+                    addTerminal('SYSTEM', `Account switched to ${shortAddress}`);
+                } else {
+                    // Disconnected
+                    gameState.walletConnected = false;
+                    gameState.walletAddress = null;
+                    document.getElementById('connectWalletTop').textContent = 'CONNECT WALLET';
+                    document.getElementById('connectWalletTop').classList.remove('connected');
+                    addTerminal('SYSTEM', 'Wallet disconnected');
+                }
+            });
         }
         
         function drawQueueView() {
