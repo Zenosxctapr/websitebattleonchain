@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATTLECHAIN - Warrior Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        /* Main Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 40px auto auto;
+            min-height: 100vh;
+        }
+        
+        /* Top Bar */
+        .top-bar {
+            grid-column: 1 / -1;
+            background: #0a0a0a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            font-size: 0.85rem;
+        }
+        
+        .top-section {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .top-item {
+            color: #888;
+        }
+        
+        .top-value {
+            color: #999;
+        }
+        
+        .live-dot {
+            color: #00FF00;
+        }
+        
+        /* Connect Wallet Button in Top Bar */
+        .connect-wallet-btn {
+            width: auto;
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            margin-left: 1rem;
+        }
+        
+        .connect-wallet-btn:hover {
+            background: #ddd;
+        }
+        
+        .connect-wallet-btn.connected {
+            background: #00FF00;
+            color: #000;
+        }
+        
+        /* Main Game Area */
+        .game-area {
+            background: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #333;
+            min-height: 600px;
+        }
+        
+        /* Game Header */
+        .game-header {
+            background: #0a0a0a;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .game-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: #00FF00;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .analyzing {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .next-battle {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .next-battle-label {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .countdown-timer {
+            font-size: 1.8rem;
+            color: #ccc;
+            font-weight: bold;
+        }
+        
+        /* Canvas Container */
+        .canvas-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 2rem 0;
+            min-height: 500px;
+        }
+        
+        canvas {
+            border: 3px solid #2a4a6a;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        /* Landing Overlay */
+        .landing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .landing-overlay.hidden {
+            display: none;
+        }
+        
+        .landing-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 3rem;
+            border: 2px solid #444;
+            background: #000;
+        }
+        
+        .landing-title {
+            font-size: 2.5rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .landing-countdown {
+            font-size: 4rem;
+            color: #ccc;
+            margin: 1.5rem 0;
+            font-weight: bold;
+        }
+        
+        .landing-text {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .queue-count {
+            color: #999;
+            font-size: 1.2rem;
+            margin: 1.5rem 0;
+        }
+        
+        input {
+            width: 100%;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #999;
+            padding: 0.75rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        input::placeholder {
+            color: #444;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #1E90FF;
+        }
+        
+        button {
+            width: 100%;
+            background: #555;
+            color: #fff;
+            border: none;
+            padding: 0.85rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #666;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            background: #0a0a0a;
+            padding: 1rem 2rem;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            color: #aaa;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        /* Bottom Battle Info Bar */
+        .bottom-battle-info {
+            background: #0a0a0a;
+            padding: 1rem 2rem;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+        }
+        
+        .battle-info-item {
+            text-align: center;
+        }
+        
+        .battle-info-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        
+        .battle-info-value {
+            color: #aaa;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        /* AI Analysis */
+        .ai-analysis {
+            background: #000;
+            padding: 0.5rem 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            border-top: 1px solid #333;
+        }
+        
+        /* Terminal */
+        .terminal {
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+            max-height: 600px;
+        }
+        
+        .terminal-header {
+            background: #000;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .terminal-title {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        
+        .terminal-logs {
+            color: #666;
+            font-size: 0.75rem;
+        }
+        
+        .terminal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .terminal-line {
+            line-height: 1.5;
+        }
+        
+        .terminal-tag {
+            color: #888;
+        }
+        
+        .terminal-name {
+            color: #999;
+        }
+        
+        .terminal-text {
+            color: #888;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .panel {
+            padding: 1.5rem;
+            border-top: 1px solid #333;
+            background: #0a0a0a;
+        }
+        
+        .panel:first-child {
+            border-top: none;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .panel-title {
+            color: #999;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        
+        .panel-status {
+            color: #00FF00;
+            font-size: 0.75rem;
+        }
+        
+        .panel-text {
+            color: #666;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        
+        .stat-box {
+            background: #000;
+            padding: 0.75rem;
+            border: 1px solid #333;
+        }
+        
+        .stat-box-label {
+            color: #666;
+            font-size: 0.7rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-box-value {
+            color: #aaa;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .stat-box-sub {
+            color: #444;
+            font-size: 0.7rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Player Queue List */
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .player-item {
+            background: #000;
+            padding: 0.5rem;
+            border-left: 2px solid #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-number {
+            color: #999;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+        
+        .player-name {
+            flex: 1;
+            color: #888;
+        }
+        
+        .empty-list {
+            text-align: center;
+            color: #444;
+            padding: 2rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Waiting Room Players List */
+        .waiting-players-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .waiting-player-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: #000;
+            border-left: 2px solid #555;
+            margin-bottom: 0.5rem;
+        }
+        
+        .waiting-player-number {
+            color: #999;
+            font-weight: bold;
+            font-size: 1.2rem;
+            min-width: 30px;
+        }
+        
+        .waiting-player-name {
+            flex: 1;
+            color: #aaa;
+            font-size: 1rem;
+        }
+        
+        .waiting-player-status {
+            color: #00FF00;
+            font-size: 0.75rem;
+        }
+        
+        /* Bottom Info */
+        .bottom-info {
+            grid-column: 1 / -1;
+            background: #0a0a0a;
+            border-top: 1px solid #333;
+            padding: 1rem 2rem;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .bottom-info strong {
+            color: #aaa;
+        }
+        
+        /* Winner Modal */
+        .winner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .winner-modal.active {
+            display: flex;
+        }
+        
+        .winner-content {
+            text-align: center;
+            padding: 3rem;
+            border: 3px solid #666;
+            background: #000;
+        }
+        
+        .winner-title {
+            font-size: 3rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+        
+        .winner-name {
+            font-size: 2rem;
+            color: #999;
+            margin-bottom: 2rem;
+        }
+        
+        /* Scrollbar */
+        .terminal-content::-webkit-scrollbar,
+        .player-list::-webkit-scrollbar,
+        .waiting-players-list::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .terminal-content::-webkit-scrollbar-track,
+        .player-list::-webkit-scrollbar-track,
+        .waiting-players-list::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: #000;
+        }
+        
+        .terminal-content::-webkit-scrollbar-thumb,
+        .player-list::-webkit-scrollbar-thumb,
+        .waiting-players-list::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-section">
+                <div class="top-item">[ AGENTS: <span class="top-value" id="agentCount">0</span> ]</div>
+                <div class="top-item">[ CHATS: <span class="top-value">0</span> ]</div>
+            </div>
+            <div class="top-section">
+                <!-- CA section removed -->
+            </div>
+            <div class="top-section">
+                <div class="top-item live-dot">● LIVE</div>
+                <div class="top-item">[ TICK #<span class="top-value" id="tickCount">16551</span> ]</div>
+                <button class="connect-wallet-btn" id="connectWalletTop">CONNECT WALLET</button>
+            </div>
+        </div>
+        
+        <!-- Game Area -->
+        <div class="game-area">
+            <!-- Game Header -->
+            <div class="game-header">
+                <div class="game-title">
+                    <div class="status-indicator"></div>
+                    <span style="color: #fff;">CLAUDE AI</span>
+                    <span class="analyzing">Battle Analyst</span>
+                    <span class="live-dot" style="margin-left: 0.5rem;">● LIVE</span>
+                </div>
+                <div class="next-battle">
+                    <span class="next-battle-label">NEXT BATTLE</span>
+                    <span class="countdown-timer" id="mainTimer">03:00</span>
+                </div>
+            </div>
+            
+            <!-- Canvas Container -->
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="960" height="640"></canvas>
+                
+                <!-- Landing Overlay (Queue System) -->
+                <div class="landing-overlay" id="landingOverlay">
+                    <div class="landing-content">
+                        <div class="landing-title">JOIN THE ARENA</div>
+                        <div class="landing-countdown" id="queueTimer">03:00</div>
+                        <div class="landing-text">
+                            Next battle starts in <span id="queueSeconds">180</span> seconds
+                        </div>
+                        <div class="queue-count" id="queueCount">0 WARRIORS READY</div>
+                        <input type="text" id="playerNameInput" placeholder="Enter your warrior name" maxlength="15">
+                        <button id="joinQueueBtn">JOIN QUEUE</button>
+                        <div class="landing-text" style="margin-top: 1rem;">
+                            <strong style="color: #aaa;">Connect wallet to verify $BRD holdings</strong><br>
+                            Warriors compete in the maze. Last one standing wins!
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-label">ANGLE</div>
+                    <div class="stat-value" id="statAngle">74</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">POWER</div>
+                    <div class="stat-value" id="statPower">260</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">WIND</div>
+                    <div class="stat-value" id="statWind">40</div>
+                </div>
+            </div>
+            
+            <!-- Bottom Battle Info -->
+            <div class="bottom-battle-info">
+                <div class="battle-info-item">
+                    <div class="battle-info-label">PLAYERS</div>
+                    <div class="battle-info-value" id="bottomPlayers">1</div>
+                </div>
+                <div class="battle-info-item">
+                    <div class="battle-info-label">PRIZE POOL</div>
+                    <div class="battle-info-value" id="bottomPrize">1.66 SOL</div>
+                </div>
+                <div class="battle-info-item">
+                    <div class="battle-info-label">STATUS</div>
+                    <div class="battle-info-value" style="color: #00FF00;" id="bottomStatus">OPEN</div>
+                </div>
+            </div>
+            
+            <!-- AI Analysis Text -->
+            <div class="ai-analysis">
+                <span style="color: #666;">AI-powered battle analysis</span>
+            </div>
+        </div>
+        
+        <!-- Terminal -->
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-title">> TERMINAL</div>
+                <div class="terminal-logs">100 LOGS</div>
+            </div>
+            <div class="terminal-content" id="terminalContent">
+                <div class="terminal-line">
+                    <span class="terminal-tag">[ON-CHAIN]</span>
+                    <span class="terminal-name">SYSTEM:</span>
+                    <span class="terminal-text">Arena initialized. Queue open for warriors...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Battle Stats -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">■ BATTLE STATS</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-box-label">■ PLAYERS</div>
+                        <div class="stat-box-value" id="playerCount">0</div>
+                        <div class="stat-box-sub">queued</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">■ ROUNDS</div>
+                        <div class="stat-box-value" id="roundCount">0</div>
+                        <div class="stat-box-sub">completed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">■ ELIMINATED</div>
+                        <div class="stat-box-value" id="eliminatedCount">0</div>
+                        <div class="stat-box-sub">total</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">■ SURVIVORS</div>
+                        <div class="stat-box-value" id="survivorCount">0</div>
+                        <div class="stat-box-sub">all-time</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current Players -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">■ CURRENT PLAYERS</span>
+                </div>
+                <div class="player-list" id="playerList">
+                    <div class="empty-list">No players yet</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Info -->
+        <div class="bottom-info">
+            <strong>HOW TO PLAY:</strong> Join the queue before timer ends. Use WASD or Arrow Keys to move. 
+            Press SPACE to attack with sword. Survive in the maze. Last warrior standing wins the round!
+        </div>
+    </div>
+    
+    <!-- Winner Modal -->
+    <div class="winner-modal" id="winnerModal">
+        <div class="winner-content">
+            <div class="winner-title">VICTORY!</div>
+            <div class="winner-name" id="winnerName">WARRIOR_001</div>
+            <button onclick="location.reload()">NEXT BATTLE</button>
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        
+        const CONFIG = {
+            queueTime: 180, // 3 minutes
+            tileSize: 30,
+            playerSpeed: 2.5,
+            attackRange: 45,
+            attackCooldown: 600,
+            maxPlayers: 18,
+        };
+        
+        const COLORS = {
+            players: ['#ccc', '#aaa', '#999', '#bbb', '#a0a0a0', '#b5b5b5', 
+                     '#9a9a9a', '#c5c5c5', '#8a8a8a', '#d0d0d0', '#858585', '#cfcfcf'],
+            wall: '#2a4a6a',
+        };
+        
+        // ============================================
+        // GAME STATE
+        // ============================================
+        
+        let gameState = {
+            queuePlayers: [],
+            activePlayers: [],
+            queueTimeLeft: CONFIG.queueTime,
+            gameStarted: false,
+            gameTime: 0,
+            tickCount: 16551,
+            maze: [],
+            eliminations: 0,
+            rounds: 0,
+            walletConnected: false,
+            walletAddress: null,
+        };
+        
+        let queueInterval = null;
+        let gameInterval = null;
+        let animationId = null;
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // ============================================
+        // QUEUE SYSTEM
+        // ============================================
+        
+        function startQueueTimer() {
+            addTerminal('SYSTEM', 'Queue timer started. Battle begins in 3:00');
+            
+            queueInterval = setInterval(() => {
+                if (gameState.gameStarted) {
+                    clearInterval(queueInterval);
+                    return;
+                }
+                
+                gameState.queueTimeLeft--;
+                gameState.tickCount++;
+                
+                updateQueueDisplay();
+                
+                // Redraw queue view if someone joined
+                if (gameState.queuePlayers.length > 0 && !document.getElementById('landingOverlay').classList.contains('hidden')) {
+                    // Still on landing page
+                } else if (gameState.queuePlayers.length > 0) {
+                    // On battle view - keep drawing
+                    drawQueueView();
+                }
+                
+                // Randomly update stats for visual effect
+                if (Math.random() < 0.3) {
+                    document.getElementById('statAngle').textContent = Math.floor(Math.random() * 360);
+                    document.getElementById('statPower').textContent = Math.floor(Math.random() * 200) + 100;
+                    document.getElementById('statWind').textContent = Math.floor(Math.random() * 100) - 50;
+                }
+                
+                if (gameState.queueTimeLeft <= 0) {
+                    startBattle();
+                }
+            }, 1000);
+        }
+        
+        function updateQueueDisplay() {
+            const mins = Math.floor(gameState.queueTimeLeft / 60);
+            const secs = gameState.queueTimeLeft % 60;
+            const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            document.getElementById('queueTimer').textContent = timeStr;
+            document.getElementById('mainTimer').textContent = timeStr;
+            document.getElementById('queueSeconds').textContent = gameState.queueTimeLeft;
+            document.getElementById('tickCount').textContent = gameState.tickCount;
+        }
+        
+        function joinQueue() {
+            const input = document.getElementById('playerNameInput');
+            const name = input.value.trim() || `WARRIOR_${gameState.queuePlayers.length + 1}`;
+            
+            // Check if wallet is connected
+            if (!gameState.walletConnected) {
+                alert('Please connect your wallet first to verify $BRD holdings!');
+                addTerminal('SYSTEM', 'Wallet connection required to join battle');
+                return;
+            }
+            
+            if (gameState.queuePlayers.length >= CONFIG.maxPlayers) {
+                addTerminal('SYSTEM', 'Queue is full! Maximum 18 players.');
+                return;
+            }
+            
+            if (gameState.queuePlayers.find(p => p.name === name)) {
+                addTerminal('SYSTEM', 'Name already taken!');
+                return;
+            }
+            
+            gameState.queuePlayers.push({ name, id: gameState.queuePlayers.length });
+            
+            updatePlayerList();
+            addTerminal('SYSTEM', `${name} joined the queue!`);
+            
+            // Hide landing overlay immediately - go to battle view
+            document.getElementById('landingOverlay').classList.add('hidden');
+            
+            // Draw player in center of grid immediately
+            drawQueueView();
+            
+            // Update all counters
+            const count = gameState.queuePlayers.length;
+            document.getElementById('queueCount').textContent = `${count} WARRIORS READY`;
+            document.getElementById('playerCount').textContent = count;
+            document.getElementById('agentCount').textContent = count;
+            document.getElementById('bottomPlayers').textContent = count;
+        }
+        
+        // Wallet Connection
+        function connectWallet() {
+            const btn = document.getElementById('connectWalletTop');
+            
+            if (gameState.walletConnected) {
+                // Disconnect
+                gameState.walletConnected = false;
+                gameState.walletAddress = null;
+                btn.textContent = 'CONNECT WALLET';
+                btn.classList.remove('connected');
+                addTerminal('SYSTEM', 'Wallet disconnected');
+            } else {
+                // Simulate wallet connection (in production, use Solana wallet adapter)
+                // For now, just mock it
+                const mockAddress = generateMockWalletAddress();
+                gameState.walletConnected = true;
+                gameState.walletAddress = mockAddress;
+                
+                const shortAddress = mockAddress.substring(0, 4) + '...' + mockAddress.substring(mockAddress.length - 4);
+                btn.textContent = shortAddress;
+                btn.classList.add('connected');
+                
+                addTerminal('SYSTEM', `Wallet connected: ${shortAddress}`);
+                addTerminal('SYSTEM', 'Verified $BRD holdings. Ready to join battle!');
+            }
+        }
+        
+        function generateMockWalletAddress() {
+            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            let address = '';
+            for (let i = 0; i < 44; i++) {
+                address += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return address;
+        }
+        
+        function drawQueueView() {
+            // Clear and draw maze
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawMaze();
+            
+            // Draw player icon in center
+            if (gameState.queuePlayers.length > 0) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const player = gameState.queuePlayers[0];
+                
+                // Draw simple player icon (like in image)
+                ctx.fillStyle = '#aaa';
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#aaa';
+                
+                // Body
+                ctx.fillRect(centerX - 7, centerY - 10, 14, 18);
+                // Head
+                ctx.fillRect(centerX - 5, centerY - 14, 10, 8);
+                
+                ctx.shadowBlur = 0;
+                
+                // Player address/name below
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(player.name, centerX, centerY + 20);
+            }
+        }
+        
+        function updatePlayerList() {
+            const list = document.getElementById('playerList');
+            
+            if (gameState.queuePlayers.length === 0) {
+                list.innerHTML = '<div class="empty-list">No players yet</div>';
+                return;
+            }
+            
+            list.innerHTML = gameState.queuePlayers.map((player, i) => `
+                <div class="player-item">
+                    <span class="player-number">${i + 1}.</span>
+                    <span class="player-name">${player.name}</span>
+                </div>
+            `).join('');
+        }
+        
+        // ============================================
+        // MAZE GENERATION
+        // ============================================
+        
+        function generateMaze() {
+            const w = Math.floor(canvas.width / CONFIG.tileSize);
+            const h = Math.floor(canvas.height / CONFIG.tileSize);
+            const maze = [];
+            
+            for (let y = 0; y < h; y++) {
+                maze[y] = [];
+                for (let x = 0; x < w; x++) {
+                    // Border walls
+                    if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
+                        maze[y][x] = 1;
+                    }
+                    // Interior maze pattern
+                    else if ((x % 4 === 0 && y % 3 === 0) || Math.random() < 0.12) {
+                        maze[y][x] = 1;
+                    }
+                    else {
+                        maze[y][x] = 0;
+                    }
+                }
+            }
+            
+            return maze;
+        }
+        
+        // ============================================
+        // WARRIOR CLASS
+        // ============================================
+        
+        class Warrior {
+            constructor(name, color, id, isPlayer = false) {
+                this.name = name;
+                this.color = color;
+                this.id = id;
+                this.isPlayer = isPlayer;
+                
+                // Spawn in empty space
+                do {
+                    this.x = Math.floor(Math.random() * 28 + 2) * CONFIG.tileSize + CONFIG.tileSize / 2;
+                    this.y = Math.floor(Math.random() * 18 + 2) * CONFIG.tileSize + CONFIG.tileSize / 2;
+                } while (this.isWall(this.x, this.y));
+                
+                this.vx = 0;
+                this.vy = 0;
+                this.size = 14;
+                this.alive = true;
+                this.kills = 0;
+                this.attacking = false;
+                this.attackDir = 0;
+                this.lastAttack = 0;
+                
+                // AI
+                this.aiDir = Math.random() * Math.PI * 2;
+                this.aiTimer = 0;
+            }
+            
+            isWall(x, y) {
+                const gx = Math.floor(x / CONFIG.tileSize);
+                const gy = Math.floor(y / CONFIG.tileSize);
+                const w = Math.floor(canvas.width / CONFIG.tileSize);
+                const h = Math.floor(canvas.height / CONFIG.tileSize);
+                
+                if (gx < 0 || gx >= w || gy < 0 || gy >= h) return true;
+                return gameState.maze[gy][gx] === 1;
+            }
+            
+            update() {
+                if (!this.alive) return;
+                
+                // AI behavior
+                if (!this.isPlayer) {
+                    this.aiTimer++;
+                    if (this.aiTimer > 50) {
+                        this.aiDir = Math.random() * Math.PI * 2;
+                        this.aiTimer = 0;
+                    }
+                    
+                    this.vx = Math.cos(this.aiDir) * CONFIG.playerSpeed;
+                    this.vy = Math.sin(this.aiDir) * CONFIG.playerSpeed;
+                    
+                    // AI attacks nearby enemies
+                    const nearest = this.findNearest();
+                    if (nearest && nearest.dist < CONFIG.attackRange * 2) {
+                        this.aiDir = nearest.angle;
+                        if (nearest.dist < CONFIG.attackRange && Date.now() - this.lastAttack > CONFIG.attackCooldown) {
+                            this.attack();
+                        }
+                    }
+                }
+                
+                const oldX = this.x;
+                const oldY = this.y;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.isWall(this.x, this.y)) {
+                    this.x = oldX;
+                    this.y = oldY;
+                    if (!this.isPlayer) {
+                        this.aiDir = Math.random() * Math.PI * 2;
+                    }
+                }
+                
+                this.vx *= 0.8;
+                this.vy *= 0.8;
+                
+                if (this.attacking && Date.now() - this.lastAttack > 200) {
+                    this.attacking = false;
+                }
+            }
+            
+            findNearest() {
+                let nearest = null;
+                let minDist = Infinity;
+                
+                for (const p of gameState.activePlayers) {
+                    if (p.id === this.id || !p.alive) continue;
+                    
+                    const dx = p.x - this.x;
+                    const dy = p.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = { dist, angle: Math.atan2(dy, dx) };
+                    }
+                }
+                
+                return nearest;
+            }
+            
+            attack() {
+                if (Date.now() - this.lastAttack < CONFIG.attackCooldown) return;
+                
+                this.attacking = true;
+                this.lastAttack = Date.now();
+                
+                if (this.isPlayer) {
+                    this.attackDir = Math.atan2(this.vy, this.vx);
+                } else {
+                    this.attackDir = this.aiDir;
+                }
+                
+                // Check hits
+                for (const p of gameState.activePlayers) {
+                    if (p.id === this.id || !p.alive) continue;
+                    
+                    const dx = p.x - this.x;
+                    const dy = p.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const angleDiff = Math.abs(angle - this.attackDir);
+                    if (dist < CONFIG.attackRange && angleDiff < Math.PI / 3) {
+                        p.alive = false;
+                        this.kills++;
+                        gameState.eliminations++;
+                        addTerminal('COMBAT', `${this.name} eliminated ${p.name}!`);
+                    }
+                }
+            }
+            
+            draw() {
+                if (!this.alive) return;
+                
+                // Body
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x - 7, this.y - 10, 14, 18);
+                
+                // Head
+                ctx.fillRect(this.x - 5, this.y - 14, 10, 8);
+                
+                ctx.shadowBlur = 0;
+                
+                // Sword when attacking
+                if (this.attacking) {
+                    ctx.strokeStyle = '#888';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const sx = this.x + Math.cos(this.attackDir) * CONFIG.attackRange;
+                    const sy = this.y + Math.sin(this.attackDir) * CONFIG.attackRange;
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(sx, sy);
+                    ctx.stroke();
+                }
+                
+                // Name
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, this.x, this.y - 20);
+            }
+        }
+        
+        // ============================================
+        // GAME LOGIC
+        // ============================================
+        
+        function startBattle() {
+            clearInterval(queueInterval);
+            
+            if (gameState.queuePlayers.length === 0) {
+                addTerminal('SYSTEM', 'No players in queue. Starting new queue...');
+                gameState.queueTimeLeft = CONFIG.queueTime;
+                startQueueTimer();
+                return;
+            }
+            
+            gameState.gameStarted = true;
+            gameState.rounds++;
+            document.getElementById('landingOverlay').classList.add('hidden');
+            document.getElementById('roundCount').textContent = gameState.rounds;
+            
+            addTerminal('SYSTEM', `Battle ${gameState.rounds} starting with ${gameState.queuePlayers.length} warriors!`);
+            
+            // Generate maze
+            gameState.maze = generateMaze();
+            
+            // Create warriors
+            gameState.queuePlayers.forEach((p, i) => {
+                const isPlayer = i === 0;
+                const warrior = new Warrior(
+                    p.name,
+                    COLORS.players[i % COLORS.players.length],
+                    i,
+                    isPlayer
+                );
+                gameState.activePlayers.push(warrior);
+            });
+            
+            gameLoop();
+        }
+        
+        function gameLoop() {
+            if (!gameState.gameStarted) return;
+            
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw maze
+            drawMaze();
+            
+            // Update & draw warriors
+            gameState.activePlayers.forEach(w => {
+                w.update();
+                w.draw();
+            });
+            
+            // Check winner
+            const alive = gameState.activePlayers.filter(p => p.alive);
+            if (alive.length === 1) {
+                endBattle(alive[0]);
+                return;
+            } else if (alive.length === 0) {
+                endBattle(null);
+                return;
+            }
+            
+            document.getElementById('survivorCount').textContent = alive.length;
+            document.getElementById('eliminatedCount').textContent = gameState.eliminations;
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function drawMaze() {
+            const w = Math.floor(canvas.width / CONFIG.tileSize);
+            const h = Math.floor(canvas.height / CONFIG.tileSize);
+            
+            ctx.strokeStyle = COLORS.wall;
+            ctx.lineWidth = 2;
+            
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (gameState.maze[y][x] === 1) {
+                        const px = x * CONFIG.tileSize;
+                        const py = y * CONFIG.tileSize;
+                        
+                        ctx.strokeRect(px, py, CONFIG.tileSize, CONFIG.tileSize);
+                        ctx.fillStyle = 'rgba(42, 74, 106, 0.05)';
+                        ctx.fillRect(px, py, CONFIG.tileSize, CONFIG.tileSize);
+                    } else {
+                        // Dots
+                        ctx.fillStyle = '#1a1a1a';
+                        ctx.beginPath();
+                        ctx.arc(
+                            x * CONFIG.tileSize + CONFIG.tileSize / 2,
+                            y * CONFIG.tileSize + CONFIG.tileSize / 2,
+                            2, 0, Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        function endBattle(winner) {
+            gameState.gameStarted = false;
+            cancelAnimationFrame(animationId);
+            
+            if (winner) {
+                addTerminal('SYSTEM', `🏆 ${winner.name} wins with ${winner.kills} kills!`);
+                document.getElementById('winnerName').textContent = winner.name;
+            } else {
+                addTerminal('SYSTEM', 'No survivors!');
+                document.getElementById('winnerName').textContent = 'NO SURVIVORS';
+            }
+            
+            document.getElementById('winnerModal').classList.add('active');
+        }
+        
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
+        
+        function addTerminal(author, text) {
+            const terminal = document.getElementById('terminalContent');
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            
+            line.innerHTML = `
+                <span class="terminal-tag">[${author === 'SYSTEM' ? 'GAME' : 'ON-CHAIN'}]</span>
+                <span class="terminal-name">${author}:</span>
+                <span class="terminal-text">${text}</span>
+            `;
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // ============================================
+        // CONTROLS
+        // ============================================
+        
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (!gameState.gameStarted || gameState.activePlayers.length === 0) return;
+            
+            const player = gameState.activePlayers[0];
+            if (!player || !player.alive || !player.isPlayer) return;
+            
+            const speed = CONFIG.playerSpeed;
+            
+            if (keys['w'] || keys['W'] || keys['ArrowUp']) player.vy = -speed;
+            if (keys['s'] || keys['S'] || keys['ArrowDown']) player.vy = speed;
+            if (keys['a'] || keys['A'] || keys['ArrowLeft']) player.vx = -speed;
+            if (keys['d'] || keys['D'] || keys['ArrowRight']) player.vx = speed;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                player.attack();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        document.getElementById('joinQueueBtn').addEventListener('click', joinQueue);
+        document.getElementById('connectWalletTop').addEventListener('click', connectWallet);
+        
+        document.getElementById('playerNameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinQueue();
+        });
+        
+        // ============================================
+        // INIT
+        // ============================================
+        
+        startQueueTimer();
+        
+        // Draw initial maze
+        gameState.maze = generateMaze();
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawMaze();
+    </script>
+</body>
+</html>
